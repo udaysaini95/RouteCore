@@ -8,10 +8,10 @@ const corsMiddleware = cors({
     allowedHeaders: [
         'Origin',
         'X-Requested-With',
-        'Content-TypeError',
+        'Content-Type',
         'Accept',
         'Authorization',
     ],
 })
 
-module.exports = {corsMiddleware}
+module.exports = { corsMiddleware }
