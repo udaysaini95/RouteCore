@@ -1,10 +1,10 @@
 const logger = require('../config/logger');
 
-const reqLogger = (req, res, next) = {
+const reqLogger = (req, res, next) => {
     logger.debug(`[${req.method}] ${req.originalUrl}`);
     const start = Date.now();
 
-    res.on('finish', () = {
+    res.on('finish', () => {
         const duration = Date.now() - start;
         logger.info(
             `[${req.method}] ${req.originalUrl} - status:${res.statusCode} - ${duration}ms`
@@ -13,3 +13,4 @@ const reqLogger = (req, res, next) = {
 
     next();
 };
+module.exports = { reqLogger }
