@@ -8,6 +8,7 @@ const { corsMiddleware } = require('./middlewares/cors.middleware');
 const errorHandler = require('./middlewares/error.middleware');
 const { reqLogger } = require('./middlewares/req.middleware');
 
+const authRoutes = require('./routes/auth.route.js')
 const app = express();
 
 // middlewares
@@ -16,6 +17,8 @@ app.use(corsMiddleware);
 app.use(reqLogger);
 app.use(cookieParser());
 app.use(express.json());
+
+app.use("/api/v1/auth", authRoutes);
 
 app.get('/', (req, res) => {
     res.send("Hello from index.js of user-service")
@@ -38,3 +41,4 @@ const startServer = async () => {
     }
 }
 
+startServer();
