@@ -1,6 +1,6 @@
 const { config } = require("../config/index.js");
 const asyncHandler = require("../utils/asyncHandler.js");
-const { BadRequestError } = require("../utils/error.js");
+const { BadRequestError, UnauthorizedError } = require("../utils/error.js");
 const authService = require('../services/auth.service.js');
 const getDeviceFingerprint = require("../utils/deviceFingerprint.js");
 
@@ -73,4 +73,34 @@ exports.login = asyncHandler(async (req, res) => {
         message: "Logged in successfully",
         loggedInUser
     })
+})
+
+exports.rotateRefreshToken = asyncHandler(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken)
+    {
+        throw new UnauthorizedError("Refresh Token is missing","LOGIN AGAIN")
+    }
+    
+    const deviceId = getDeviceFingerprint(req);
+    const { newAccessToken, newRefreshToken } = await authService.rotateRefreshToken(refreshToken, deviceId);
+    res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: config.ACCESS_TOKEN_EXP_SEC * 1000
+    })
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: config.REFRESH_TOKEN_EXP_SEC * 1000,
+    }).status(200).json({
+        success: true,
+        message:"Access and Refresh Token reIssued"
+    })
+
+
+    
 })

@@ -9,7 +9,7 @@ exports.hashToken = (refreshToken) => {
   return crypto.createHash("sha256").update(refreshToken).digest("hex");
 };
 
-exports.generateAccesToken = (userId) => {
+exports.generateAccessToken = (userId) => {
   const payload = {
     id: userId,
   };
@@ -17,6 +17,7 @@ exports.generateAccesToken = (userId) => {
     expiresIn: config.ACCESS_TOKEN_EXP,
   });
 };
+exports.generateAccesToken = exports.generateAccessToken;
 
 exports.generateRefreshToken = (userId) => {
   const payload = {
