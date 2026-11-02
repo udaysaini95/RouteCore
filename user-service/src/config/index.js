@@ -12,7 +12,7 @@ const config = {
   JWT_REFRESH_SECRET:
     process.env.JWT_REFRESH_SECRET ||
     "826d2c0edb5ad8f8ac7668556c034ea228931a49576aefccc80d6f469cc4a34c4da82ca43a5c43de91ffdad2f4644c655e2eb3ccbb8bc2848cb64fe7ea2a1ab9",
-
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   ACCESS_TOKEN_EXP: process.env.ACCESS_TOKEN_EXP || "15m",
   REFRESH_TOKEN_EXP: process.env.REFRESH_TOKEN_EXP || "7d",
 

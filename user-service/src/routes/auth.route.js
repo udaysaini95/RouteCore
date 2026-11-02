@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const { sendOTP, verifyOtp,login, rotateRefreshToken } = require('../controllers/auth.controller.js')
+const { sendOTP, verifyOTP, login, rotateRefreshToken, verifyGoogleIdToken } = require('../controllers/auth.controller.js')
 
 router.post("/send-otp", sendOTP);
-router.post('/verify-otp', verifyOtp);
+router.post('/verify-otp', verifyOTP);
 router.post("/login", login);
-router.get("/refresh",rotateRefreshToken)
+router.get("/refresh", rotateRefreshToken);
+router.post("/google", verifyGoogleIdToken);
 module.exports = router;
