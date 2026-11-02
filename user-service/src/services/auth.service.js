@@ -4,8 +4,9 @@ const prisma = require('../config/prisma.js');
 const { generateAndStoreOtp, verifyOtp: verifyOtpInRedis } = require('../utils/otp.js');
 const { sendOtpEmail, verifyOtpEmail } = require('../utils/email.js');
 const { generateAccesToken, generateRefreshToken } = require("../utils/auth.js");
-const { config } = require("winston");
-
+const { config } = require("../config");
+const jwt = require('jsonwebtoken');
+const { redis } = require("../config/redis.js");
 const sendOTP = async (firstName, lastName, email, password) => {
     const existingUser = await prisma.user.findUnique({
         where: { email }
@@ -49,7 +50,7 @@ const login = async(email, password, deviceId)=>
         where: { email }
     })
 
-    if (existingUser)
+    if (!existingUser)
     {
         throw new BadRequestError("Email not found")
     }
@@ -61,21 +62,21 @@ const login = async(email, password, deviceId)=>
         throw new BadRequestError("Wrong Password")
     }
 
-    const acccesToken = generateAccesToken(existingUser.id);
+    const accessToken = generateAccesToken(existingUser.id);
     const refreshToken = generateRefreshToken(existingUser.id);
 
     const { jti } = jwt.decode(refreshToken);
     await redis.set(
-      `refresh:${existingUser.id}:${deviceId}`,
-      jti,
-      "EX",
-      REFRESH_TOKEN_EXP_SEC,
+        `refresh:${existingUser.id}:${deviceId}`,
+        jti,
+        "EX",
+        config.REFRESH_TOKEN_EXP_SEC,
     );
 
-    const { password: _password, ...safeUser } = { existingUser };
-    await redis.set(`user:${existingUser.id}`, JSON.stringify(safeUser), EX, config.REDIS_USER_TTL);
+    const { password: _password, ...safeUser } = existingUser ;
+    await redis.set(`user:${existingUser.id}`, JSON.stringify(safeUser), "EX", config.REDIS_USER_TTL);
 
-    return {acccesToken,refreshToken,loggedInUser:safeUser}
+    return {accessToken,refreshToken,loggedInUser:safeUser}
 }
 
 

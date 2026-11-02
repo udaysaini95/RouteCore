@@ -46,17 +46,16 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
     });
 });
 
-exports.login = asyncHandler((req, res) => {
+exports.login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password)
-    {
-        return new BadRequestError("Incomplete Information")
+    if (!email || !password) {
+        throw new BadRequestError("Incomplete Information")
     }
 
     const deviceId = getDeviceFingerprint(req);
-    
-    const { accessToken, refreshToken, loggedInUser } = authService.login(email, password, deviceId);
-    
+
+    const { accessToken, refreshToken, loggedInUser } = await authService.login(email, password, deviceId);
+
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: true,
@@ -65,10 +64,10 @@ exports.login = asyncHandler((req, res) => {
     })
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      maxAge:config.REFRESH_TOKEN_EXP_SEC*1000
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: config.REFRESH_TOKEN_EXP_SEC * 1000
     }).status(200).json({
         success: true,
         message: "Logged in successfully",
