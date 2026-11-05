@@ -16,9 +16,11 @@ const { redis } = require("../config/redis");
 const { config } = require("../config");
 const logger = require("../config/logger");
 const jwt = require("jsonwebtoken");
+
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 const { sendOtpEmail, verifyOtpEmail } = require("../utils/email");
+const notificationProducer = require("../kafka/producer/notification.producer");
 const sendOTP = async (firstName, lastName, email, password) => {
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -30,7 +32,9 @@ const sendOTP = async (firstName, lastName, email, password) => {
   const hashedPassword = await bcrypt.hash(password, 12);
   const meta = { firstName, lastName, email, hashedPassword };
   const { otp, otpSessionId } = await generateAndStoreOtp(meta);
-  await sendOtpEmail(email, otp);
+
+  // await sendOtpEmail(email, otp);
+  await notificationProducer.sendOtpEmail(email, otp, (config.OTP_TTL) / 60)
   logger.info(`OTP email queued for : ${email}`);
   return { otpSessionId };
 };
@@ -49,10 +53,9 @@ const verifyOTP = async (otp, otpSessionId) => {
       emailVerified: true,
     },
   });
-  
-  await verifyOtpEmail(meta);  
-  logger.info(`Welcome email queued for ${meta.email}`);
-  return user; 
+
+  await notificationProducer.sendWelcomeEmail(meta.email, meta.firstName); logger.info(`Welcome email queued for ${meta.email}`);
+  return user;
 };
 
 const login = async (email, password, deviceId) => {

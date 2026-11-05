@@ -16,6 +16,9 @@ const config = {
   ACCESS_TOKEN_EXP: process.env.ACCESS_TOKEN_EXP || "15m",
   REFRESH_TOKEN_EXP: process.env.REFRESH_TOKEN_EXP || "7d",
 
+  KAFKA_BROKER: process.env.KAFKA_BROKER,
+  KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID,
+
   ACCESS_TOKEN_EXP_SEC: Number(process.env.ACCESS_TOKEN_EXP_SEC || 900),
   REFRESH_TOKEN_EXP_SEC: Number(process.env.REFRESH_TOKEN_EXP_SEC || 604800),
 
