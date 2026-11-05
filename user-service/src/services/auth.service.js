@@ -49,10 +49,10 @@ const verifyOTP = async (otp, otpSessionId) => {
       emailVerified: true,
     },
   });
-
-  await verifyOtpEmail(meta);
+  
+  await verifyOtpEmail(meta);  
   logger.info(`Welcome email queued for ${meta.email}`);
-  return user;
+  return user; 
 };
 
 const login = async (email, password, deviceId) => {
