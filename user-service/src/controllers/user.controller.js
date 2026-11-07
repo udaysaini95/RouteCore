@@ -7,16 +7,16 @@ exports.getProfile = asyncHandler(async (req, res) => {
     const userId = req.user.id;
     if (!userId)
     {
-        throw new BadRequestError("User Id is Missing")
+        throw new BadRequestError("User Id is Missing");
     }
 
-    const user = await userService.getProfile;
+    const user = await userService.getProfile(userId);
     return res.status(200).json({
-        message: "Fetched user Details",
-        success: true,
-        data: {
-            user
-        }
-    })
+      success: true,
+      message: "Fetched user Details",
+      data: {
+        user,
+      },
+    });
 })
 

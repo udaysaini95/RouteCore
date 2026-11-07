@@ -1,5 +1,8 @@
 const logger = require("../config/logger");
-
+const prisma = require("../config/prisma");
+const redis = require("../config/redis");
+const { config } = require("../config");
+const { NotFoundError } = require("../utils/error");
 
 const getProfile = async (userId) => {
     // first check in redis
@@ -27,6 +30,11 @@ const getProfile = async (userId) => {
         }
     })
 
+    if (!userProfile)
+    {
+        throw new NotFoundError("User Not Found");
+    }
+
     // remove password and store in redis
     const { password: _password, ...safeUser } = userProfile;
     logger.info("storing in redis");
@@ -37,7 +45,7 @@ const getProfile = async (userId) => {
       config.REDIS_USER_TTL,
     );
 
-    // return userProfile; it also contains password
+    // return userProfile; it also contains password no dont return
     return safeUser;
 }
 

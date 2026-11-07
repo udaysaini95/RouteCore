@@ -20,6 +20,9 @@ const requireAuth = asyncHandler((req, res, next) => {
         }
         return next();
     } catch (error) {
+        if (error.name === "TokenExpiredError") {
+          throw new UnauthorizedError("Token Expired");
+        }
         throw new UnauthorizedError("Invalid Token");
     }
 })
