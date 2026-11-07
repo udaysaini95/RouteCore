@@ -1,6 +1,6 @@
 const logger = require("../config/logger");
 const prisma = require("../config/prisma");
-const redis = require("../config/redis");
+const { redis } = require("../config/redis");
 const { config } = require("../config");
 const { NotFoundError } = require("../utils/error");
 
