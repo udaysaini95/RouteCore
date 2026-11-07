@@ -40,3 +40,5 @@ const getProfile = async (userId) => {
     // return userProfile; it also contains password
     return safeUser;
 }
+
+module.exports = { getProfile };

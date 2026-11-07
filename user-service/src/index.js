@@ -20,6 +20,7 @@ app.use(express.json());
 
 app.use("/api/v1/auth", authRoutes);
 
+
 app.get('/', (req, res) => {
     res.send("Hello from index.js of user-service")
 })
