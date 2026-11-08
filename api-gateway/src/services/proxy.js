@@ -70,3 +70,10 @@ class CircuitBreaker{
         }
     }
 }
+
+// circuit breaker for each service
+const circuitBreaker = {
+    userService : new CircuitBreaker('user-service'),
+    bookingService : new CircuitBreaker('booking-service'),
+    searchService : new CircuitBreaker('search-service')
+}
