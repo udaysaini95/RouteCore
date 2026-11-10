@@ -2,7 +2,7 @@ const logger = require("../config/logger");
 const { ServiceUnavailableError } = require("../utils/error");
 
 
-// implementing circuit breaker class
+// 1 implementing circuit breaker class
 class CircuitBreaker{
     constructor(serviceName, threshold = config.CIRCUIT_BREAKER_THRESHOLD, timeout = config.CIRCUIT_BREAKER_TIMEOUT)
     {
@@ -72,8 +72,82 @@ class CircuitBreaker{
 }
 
 // circuit breaker for each service
-const circuitBreaker = {
+const circuitBreakers = {
     userService : new CircuitBreaker('user-service'),
     bookingService : new CircuitBreaker('booking-service'),
     searchService : new CircuitBreaker('search-service')
 }
+
+// 2 Forwarding request to down streamservices
+
+
+
+// 3 proxy middleware factory
+
+function createProxy(serviceName,serviceUrl)
+{
+    const circuitBreaker = circuitBreaker[serviceName];
+
+    if (!circuitBreaker)
+    {
+        throw new Error(`No Circuit Breaker found for service:${serviceName}`);
+    }
+
+    return async (req, res, next) => {
+        try {
+
+          // extract path
+          // gateway: /api/users/auth/login -> service /auth/login
+          // gateway: /api/users/user/profile -> service /user/profile
+            logger.info(req.path);
+            const pathParts = req.path.split('/').filter(Boolean);
+            logger.info(pathParts);
+
+            // remove users (keep the rest)
+            // [users,auth,login] -> [auth/login]
+            const servicePath = '/' + pathParts.slice(1).join('/');
+            logger.info(servicePath);
+
+            const result = await forwardRequest(
+              serviceUrl,
+                servicePath + (req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""),
+                req.method,
+                req.body,
+                req.headers,
+                circuitBreaker
+            );
+
+            const excludeHeaders = [
+              "connection",
+              "keep-alive",
+              "transfer-encoding",
+              "host",
+            ];
+
+            
+            
+             Object.keys(result.headers).forEach((key) => {
+               if (!excludeHeaders.includes(key.toLowerCase())) {
+                 res.setHeader(key, result.headers[key]);
+               }
+             });
+            res.status(result.status).json(result.data);
+
+        } catch (error) {
+             next(err);
+        }
+    }
+}
+
+function getCircuitBreakerStatus() {
+  return Object.values(circuitBreakers).map((cb) => cb.getState());
+}
+
+module.exports = {
+  createProxy,
+  CircuitBreaker,
+  circuitBreakers,
+  getCircuitBreakerStatus,
+};
+
+
