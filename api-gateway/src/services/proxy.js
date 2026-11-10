@@ -79,7 +79,92 @@ const circuitBreakers = {
 }
 
 // 2 Forwarding request to down streamservices
+async function forwardRequest(serviceUrl, path, method, data, headers, circuitBreaker)
+{
+  const url = `${serviceUrl}${path}`;
 
+  const requestConfig = {
+    method,
+    url,
+    timeout: config.SERVICE_TIMEOUT_MS,
+    headers: {
+      ...headers,
+      host: undefined,
+      "content-length": undefined,
+    },
+
+    // Important: Don't validate status, let service response through
+    validateStatus: () => true,
+    maxRedirects: 5,
+  };
+
+  if (method !== "GET" && method !== "DELETE" && data) {
+    requestConfig.data = data;
+  }
+
+  if ((method === "GET" || method === "DELETE") && data) {
+    requestConfig.params = data;
+  }
+
+  logger.debug(`Forwarding ${method} ${url}`, {
+    headers: requestConfig.headers,
+    hasData: !!data,
+    timeout: config.SERVICE_TIMEOUT_MS,
+  });
+
+  try {
+    const response = await circuitBreaker.execute(() => axios(requestConfig));
+
+    logger.debug(`Response from ${url}:`, {
+      status: response.status,
+      statusText: response.statusText,
+    });
+
+    return {
+      status: response.status,
+      data: response.data,
+      headers: response.headers,
+    };
+  } catch (err) {
+    logger.error(`Error forwarding to ${serviceUrl}:`, {
+      message: err.message,
+      code: err.code,
+      url: url,
+      method: method,
+      timeout: config.SERVICE_TIMEOUT_MS,
+    });
+
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      throw new GatewayTimeoutError(
+        `Request to ${serviceUrl} timed out after ${config.SERVICE_TIMEOUT_MS}ms`,
+      );
+    }
+
+    if (err.code === "ECONNREFUSED") {
+      throw new ServiceUnavailableError(
+        `Cannot connect to ${serviceUrl}. Service may be down.`,
+      );
+    }
+    if (err.response) {
+      logger.error(`Service error from ${serviceUrl}:`, {
+        status: err.response.status,
+        data: err.response.data,
+      });
+
+      return {
+        status: err.response.status,
+        data: err.response.data,
+        headers: err.response.headers,
+      };
+    }
+
+    // Network error or service down
+    logger.error(`Network error while calling ${serviceUrl}:`, err.message);
+    throw new ServiceUnavailableError(
+      `Service temporarily unavailable: ${err.message}`,
+    );
+  }
+}
 
 
 // 3 proxy middleware factory
