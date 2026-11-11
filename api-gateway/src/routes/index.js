@@ -11,7 +11,7 @@ const userServiceProxy = createProxy('userService', config.SERVICES.USER_SERVICE
 // public route
 router.post('/users/auth/send-otp', userServiceProxy);
 router.post('/users/auth/verify-otp', userServiceProxy);
-router.post('/users/auth/login', endpointRateLimit(10, 900000), userServiceProxy) // 10 req per 15 min
+router.post('/users/auth/login', endpointRateLimit(100, 900000), userServiceProxy) // 100 req per 15 min
 
 // private route
 router.get('/users/user/get-profile', requireAuth, combinedRateLimit(), userServiceProxy);
