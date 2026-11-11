@@ -22,7 +22,7 @@ const config = {
   ACCESS_TOKEN_EXP_SEC: Number(process.env.ACCESS_TOKEN_EXP_SEC || 900),
   REFRESH_TOKEN_EXP_SEC: Number(process.env.REFRESH_TOKEN_EXP_SEC || 604800),
 
-  PORT: Number(process.env.PORT) || 4001,
+  PORT: Number(process.env.PORT) || 4000,
   NODE_ENV: process.env.NODE_ENV || "development",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   DATABASE_URL:
@@ -34,10 +34,19 @@ const config = {
   OTP_TTL: Number(process.env.OTP_TTL) || 300,
   OTP_RATE_MAX_PER_HOUR: Number(process.env.OTP_RATE_MAX_PER_HOUR) || 5,
   OTP_ATTEMPT_MAX: Number(process.env.OTP_ATTEMPT_MAX) || 3,
+
+  SERVICES: {
+    USER_SERVICE_URL: process.env.USER_SERVICE_URL || "http://localhost:4001",
+    BOOKING_SERVICE_URL:
+      process.env.BOOKING_SERVICE_URL || "http://localhost:4002",
+  },
+
+  CIRCUIT_BREAKER_THRESHOLD: Number(process.env.CIRCUIT_BREAKER_THRESHOLD || 5),
+  CIRCUIT_BREAKER_TIMEOUT: Number(process.env.CIRCUIT_BREAKER_TIMEOUT || 30000), // 30 seconds
+  SERVICE_TIMEOUT_MS: Number(process.env.SERVICE_TIMEOUT_MS || 5000), // 5 seconds
 };
 
-if (!config.SENDGRID_API_KEY) {
-  throw new Error("Send Grid Api Key Missing");
-}
+
+
 
 module.exports = { config };
