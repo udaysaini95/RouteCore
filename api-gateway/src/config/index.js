@@ -44,6 +44,9 @@ const config = {
   CIRCUIT_BREAKER_THRESHOLD: Number(process.env.CIRCUIT_BREAKER_THRESHOLD || 5),
   CIRCUIT_BREAKER_TIMEOUT: Number(process.env.CIRCUIT_BREAKER_TIMEOUT || 30000), // 30 seconds
   SERVICE_TIMEOUT_MS: Number(process.env.SERVICE_TIMEOUT_MS || 5000), // 5 seconds
+
+  RATE_LIMIT_MAX_REQUESTS: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 100),
+  RATE_LIMIT_WINDOW_MS: Number(process.env.RATE_LIMIT_WINDOW_MS || 900000), // 15 minutes (900,000 ms)
 };
 
 

@@ -18,7 +18,7 @@ async function rateLimiter(key, maxRequests, windowMs) {
     pipeline.zcard(key); // return total count of elements remaining in set
     pipeline.expire(key, Math.ceil(windowMs / 1000)); // set an auto delete ttl
 
-    const results = pipeline.exec();
+    const results = await pipeline.exec();
     const requestCount = results[2][1];
     // await pipeline.exec(): Sends all 4 commands to Redis. It returns an array of results:
     //results[0] ➡️ Output of zremrangebyscore
@@ -29,7 +29,7 @@ async function rateLimiter(key, maxRequests, windowMs) {
     if (requestCount > maxRequests) {
       const oldestRequest = await redis.zrange(key, 0, 0, "WITHSCORES");
       const resetTime = parseInt(oldestRequest[1]) + windowMs;
-      const retryAfter = Math.ceil((resetTime - nov) / 1000);
+      const retryAfter = Math.ceil((resetTime - now) / 1000);
 
       return {
         allowed: false,
@@ -45,7 +45,7 @@ async function rateLimiter(key, maxRequests, windowMs) {
       resetTime: windowStart + windowMs,
     };
   } catch (error) {
-      logger.error("Rate Limiter error:", err);
+      logger.error("Rate Limiter error:", error);
      // Fail Open Allow request if redis is down
     return { allowed: true, remaining: maxRequests };
   }
@@ -62,11 +62,11 @@ function ipRateLimit(options = {})
     const maxRequests = options.max || config.RATE_LIMIT_MAX_REQUESTS;
     const windowMs = options.windowMs || config.RATE_LIMIT_WINDOW_MS;
     
-    return async (req, resizeBy, next) => {
+    return async (req, res, next) => {
       const ip = req.ip || req.connection.remoteAddress;
       const key = `ratelimit:ip:${ip}`;
 
-      const result = rateLimiter(key, maxRequests, windowMs);
+      const result = await rateLimiter(key, maxRequests, windowMs);
       // set rate limit headers response headers
       res.setHeader("X-RateLimit-Limit", maxRequests);
       res.setHeader("X-RateLimit-Remaining", result.remaining);
@@ -89,6 +89,83 @@ function ipRateLimit(options = {})
     }
 
 }
+function userRateLimit(options = {}) {
+  const maxRequests = options.max || config.RATE_LIMIT_MAX_REQUESTS * 10;
+  const windowMs = options.windowMs || config.RATE_LIMIT_WINDOW_MS;
+
+  return async (req, res, next) => {
+    // Skip if no user authenticated
+    if (!req.user || !req.user.id) {
+      return next();
+    }
+
+    const userId = req.user.id;
+    const key = `ratelimit:user:${userId}`;
+
+    const result = await rateLimiter(key, maxRequests, windowMs);
+
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", result.remaining);
+    res.setHeader(
+      "X-RateLimit-Reset",
+      new Date(result.resetTime).toISOString(),
+    );
+
+    if (!result.allowed) {
+      res.setHeader("Retry-After", result.retryAfter);
+      logger.warn(`Rate limit exceeded for user: ${userId}`);
+      return next(
+        new TooManyRequestsError(
+          `Too many requests. Please try again in ${result.retryAfter} seconds`,
+          result.retryAfter,
+        ),
+      );
+    }
+
+    next();
+  };
+}
+
+function endpointRateLimit(maxRequests, windowMs) {
+  return async (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const endpoint = `${req.method}:${req.path}`;
+    const key = `ratelimit:endpoint:${endpoint}:${ip}`;
+
+    const result = await rateLimiter(key, maxRequests, windowMs);
+
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", result.remaining);
+    res.setHeader(
+      "X-RateLimit-Reset",
+      new Date(result.resetTime).toISOString(),
+    );
+
+    if (!result.allowed) {
+      res.setHeader("Retry-After", result.retryAfter);
+      logger.warn(
+        `Endpoint rate limit exceeded for ${endpoint} from IP: ${ip}`,
+      );
+      return next(
+        new TooManyRequestsError(
+          `Too many requests to this endpoint. Please try again in ${result.retryAfter} seconds`,
+          result.retryAfter,
+        ),
+      );
+    }
+
+    next();
+  };
+}
+
+
+
+
+
+
+
+
+
 function combinedRateLimit(ipOptions = {}, userOptions = {}) {
   const ipLimiter = ipRateLimit(ipOptions);
   const userLimiter = userRateLimit(userOptions);
