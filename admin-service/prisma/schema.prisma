@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Station {
+  id        String   @id @default(uuid())
+  name      String   @unique // "New Delhi"
+  code      String   @unique // "NDLS"
+  city      String // "Delhi"
+  state     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routeStations RouteStation[] // one station can be part of multiple routes
+
+  @@index([name])
+  @@index([code])
+  @@map("stations")
+}
+
+model Train {
+  id          String   @id @default(uuid())
+  trainNumber String   @unique // "12301"
+  trainName   String // "Rajdhani Express"
+  coachName   String   @default("AC") // Single coach per train (simplified)
+  totalSeats  Int // Total seats in the single coach
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  seats     Seat[]
+  route     Route?
+  schedules Schedule[]
+
+  @@map("trains")
+}
+
+
