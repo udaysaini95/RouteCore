@@ -37,11 +37,76 @@ model Train {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  seats     Seat[]
-  route     Route?
-  schedules Schedule[]
+  seats     Seat[] // one train can have multiple seats
+  route     Route? // one train can have only one route
+  schedules Schedule[] // weekends,evendays,everydays schedule
 
   @@map("trains")
 }
 
+enum SeatType {
+  LOWER
+  MIDDLE
+  UPPER
+  SIDE_LOWER
+  SIDE_UPPER
+}
 
+model Seat {
+  id         String   @id @default(uuid())
+  trainId    String
+  seatNumber Int // 1, 2, 3...
+  seatType   SeatType // LOWER, MIDDLE, UPPER etc
+  price      Float // Price for this seat type
+
+  train Train @relation(fields: [trainId], references: [id], onDelete: Cascade)
+
+  @@unique([trainId, seatNumber]) // train number cannot repete in one train
+  @@map("seats")
+}
+
+model Route {
+  id      String @id @default(uuid())
+  trainId String @unique
+
+  train         Train          @relation(fields: [trainId], references: [id], onDelete: Cascade)
+  routeStations RouteStation[]
+
+  @@map("routes")
+}
+
+model RouteStation {
+  id                 String  @id @default(uuid())
+  routeId            String
+  stationId          String
+  sequenceNumber     Int // 1, 2, 3... order of station in route
+  arrivalTime        String? // "06:00"
+  departureTime      String? // "06:10" (null for last station)
+  distanceFromOrigin Float   @default(0) // in km, for pricing calculation
+
+  route   Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, sequenceNumber])
+  @@unique([routeId, stationId])
+  @@map("route_stations")
+}
+
+model Schedule {
+  id            String         @id @default(uuid())
+  trainId       String
+  departureDate DateTime       @db.Date // The date this train runs
+  status        ScheduleStatus @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  train Train @relation(fields: [trainId], references: [id], onDelete: Cascade)
+
+  @@unique([trainId, departureDate])
+  @@map("schedules")
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  CANCELLED
+}
